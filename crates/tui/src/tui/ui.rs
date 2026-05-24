@@ -5738,11 +5738,15 @@ fn render(f: &mut Frame, app: &mut App) {
     // Decision card overlay (v0.8.43 truth-surface). When a decision card is
     // active, render it centered on top of the transcript.
     if let Some(ref card) = app.decision_card {
-        let card_width = size.width.min(60).max(30);
+        let card_width = size.width.clamp(30, 60);
         let card_height = card.desired_height(card_width);
         let card_area = ratatui::layout::Rect {
-            x: size.x.saturating_add(size.width.saturating_sub(card_width) / 2),
-            y: size.y.saturating_add(size.height.saturating_sub(card_height) / 2),
+            x: size
+                .x
+                .saturating_add(size.width.saturating_sub(card_width) / 2),
+            y: size
+                .y
+                .saturating_add(size.height.saturating_sub(card_height) / 2),
             width: card_width,
             height: card_height.min(size.height),
         };
