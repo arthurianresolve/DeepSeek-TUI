@@ -4216,7 +4216,7 @@ pub(crate) fn apply_engine_error_to_app(
         app.onboarding_needs_api_key = true;
         app.onboarding = OnboardingState::ApiKey;
         app.status_message = Some(
-            "The API key from DEEPSEEK_API_KEY was rejected. Paste a valid key to save it to ~/.deepseek/config.toml, or update the environment variable.".to_string(),
+            "The API key from DEEPSEEK_API_KEY was rejected. Paste a valid key to save it to ~/.codewhale/config.toml, or update the environment variable.".to_string(),
         );
         return;
     }
@@ -7045,7 +7045,7 @@ fn apply_backtrack(app: &mut App, depth: usize) {
     app.needs_redraw = true;
 }
 
-/// Persist the typed API key to `~/.deepseek/config.toml`, refresh the
+/// Persist the typed API key to `~/.codewhale/config.toml`, refresh the
 /// in-memory config so the engine can see it, then switch to the provider.
 async fn apply_provider_picker_api_key(
     app: &mut App,

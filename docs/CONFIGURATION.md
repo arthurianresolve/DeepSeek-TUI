@@ -78,7 +78,7 @@ the resolved key, base URL, provider, and model to the TUI process. Use
 `codewhale auth set --provider openai --api-key "YOUR_OPENAI_COMPATIBLE_API_KEY"` or
 `codewhale auth set --provider atlascloud --api-key "YOUR_ATLASCLOUD_API_KEY"` or
 `codewhale auth set --provider wanjie-ark --api-key "YOUR_WANJIE_API_KEY"` or
-`codewhale auth set --provider xiaomi-mimo --api-key "YOUR_XIAOMI_MIMO_API_KEY"` or
+`codewhale auth set --provider xiaomi-mimo --api-key "YOUR_XIAOMI_KEY"` or
 `codewhale auth set --provider fireworks --api-key "YOUR_FIREWORKS_API_KEY"` or
 `codewhale auth set --provider siliconflow --api-key "YOUR_SILICONFLOW_API_KEY"`
 to save provider keys through the facade. The generic `openai` provider defaults
@@ -155,7 +155,7 @@ vision_model = true
 
 [vision_model]
 model = "mimo-v2.5"
-api_key = "YOUR_XIAOMI_MIMO_API_KEY"
+api_key = "YOUR_XIAOMI_KEY"
 base_url = "https://api.xiaomimimo.com/v1"
 ```
 
@@ -269,7 +269,7 @@ Remaining variables:
 - `WANJIE_ARK_MODEL`, `WANJIE_MODEL`, or `WANJIE_MAAS_MODEL`
 - `OPENROUTER_API_KEY`
 - `OPENROUTER_BASE_URL`
-- `XIAOMI_MIMO_API_KEY` or `MIMO_API_KEY`
+- `XIAOMI_MIMO_API_KEY`, `XIAOMI_API_KEY`, or `MIMO_API_KEY`
 - `XIAOMI_MIMO_BASE_URL` or `MIMO_BASE_URL`
 - `XIAOMI_MIMO_MODEL` or `MIMO_MODEL`
 - `NOVITA_API_KEY`

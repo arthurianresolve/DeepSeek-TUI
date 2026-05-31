@@ -807,7 +807,7 @@ fn provider_env_vars(provider: ProviderKind) -> &'static [&'static str] {
     match provider {
         ProviderKind::Deepseek => &["DEEPSEEK_API_KEY"],
         ProviderKind::Openrouter => &["OPENROUTER_API_KEY"],
-        ProviderKind::XiaomiMimo => &["XIAOMI_MIMO_API_KEY", "MIMO_API_KEY"],
+        ProviderKind::XiaomiMimo => &["XIAOMI_MIMO_API_KEY", "XIAOMI_API_KEY", "MIMO_API_KEY"],
         ProviderKind::Novita => &["NOVITA_API_KEY"],
         ProviderKind::NvidiaNim => &["NVIDIA_API_KEY", "NVIDIA_NIM_API_KEY", "DEEPSEEK_API_KEY"],
         ProviderKind::Fireworks => &["FIREWORKS_API_KEY"],
@@ -2955,7 +2955,7 @@ mod tests {
             (
                 ProviderKind::XiaomiMimo,
                 "xiaomi-mimo",
-                &["XIAOMI_MIMO_API_KEY", "MIMO_API_KEY"],
+                &["XIAOMI_MIMO_API_KEY", "XIAOMI_API_KEY", "MIMO_API_KEY"],
             ),
             (ProviderKind::Novita, "novita", &["NOVITA_API_KEY"]),
             (

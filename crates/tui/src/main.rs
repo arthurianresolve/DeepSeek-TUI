@@ -1932,7 +1932,7 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
                     "codewhale auth set --provider openrouter --api-key \"...\"",
                 ),
                 crate::config::ApiProvider::XiaomiMimo => (
-                    "XIAOMI_MIMO_API_KEY/MIMO_API_KEY",
+                    "XIAOMI_MIMO_API_KEY/XIAOMI_API_KEY/MIMO_API_KEY",
                     "codewhale auth set --provider xiaomi-mimo --api-key \"...\"",
                 ),
                 crate::config::ApiProvider::Novita => (
@@ -1971,7 +1971,7 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
                 }
             };
             println!(
-                "  {} api_key: missing  (set {env_var} or `[providers.{}].api_key` in ~/.deepseek/config.toml; or run `{login_hint}`)",
+                "  {} api_key: missing  (set {env_var} or `[providers.{}].api_key` in ~/.codewhale/config.toml; or run `{login_hint}`)",
                 "✗".truecolor(red_r, red_g, red_b),
                 match config.api_provider() {
                     crate::config::ApiProvider::NvidiaNim => "nvidia_nim",
@@ -2291,7 +2291,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         (
             crate::config::ApiProvider::XiaomiMimo,
             "xiaomi-mimo",
-            &["XIAOMI_MIMO_API_KEY", "MIMO_API_KEY"][..],
+            &["XIAOMI_MIMO_API_KEY", "XIAOMI_API_KEY", "MIMO_API_KEY"][..],
         ),
         (
             crate::config::ApiProvider::Novita,
@@ -2361,7 +2361,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
             if in_config { "yes" } else { "no" }
         );
     }
-    println!("  · credential precedence: ~/.deepseek/config.toml, OS keyring, then env");
+    println!("  · credential precedence: ~/.codewhale/config.toml, OS keyring, then env");
 
     let api_key_source = resolve_api_key_source(config);
     let has_api_key = if config.deepseek_api_key().is_ok() {
@@ -2392,7 +2392,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
             "✗".truecolor(red_r, red_g, red_b)
         );
         println!(
-            "    Run 'codewhale auth set --provider <name>' to save a key to ~/.deepseek/config.toml."
+            "    Run 'codewhale auth set --provider <name>' to save a key to ~/.codewhale/config.toml."
         );
         false
     };
@@ -3435,7 +3435,7 @@ fn doctor_timeout_recovery_lines(config: &Config) -> Vec<String> {
                 && !target.base_url.contains("api.deepseeki.com") =>
         {
             lines.push(
-                "If this is a custom DeepSeek-compatible endpoint, set its HTTPS base URL in ~/.deepseek/config.toml and rerun `codewhale doctor`."
+                "If this is a custom DeepSeek-compatible endpoint, set its HTTPS base URL in ~/.codewhale/config.toml and rerun `codewhale doctor`."
                     .to_string(),
             );
         }
@@ -4870,7 +4870,7 @@ fn merge_project_config(config: &mut Config, workspace: &Path) {
         if table.contains_key(*key) {
             eprintln!(
                 "warning: project-scope config key `{key}` is ignored — \
-                 set it in `~/.deepseek/config.toml` instead. \
+                 set it in `~/.codewhale/config.toml` instead. \
                  (See #417 for the deny-list rationale.)"
             );
         }

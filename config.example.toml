@@ -196,7 +196,7 @@ max_subagents = 10 # optional (1-20)
 #   OpenAI-compatible: OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
 #   Wanjie Ark: WANJIE_ARK_API_KEY (or WANJIE_API_KEY), WANJIE_ARK_BASE_URL, WANJIE_ARK_MODEL
 #   OpenRouter: OPENROUTER_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_MODEL
-#   Xiaomi MiMo: XIAOMI_MIMO_API_KEY (or MIMO_API_KEY), XIAOMI_MIMO_BASE_URL, XIAOMI_MIMO_MODEL
+#   Xiaomi MiMo: XIAOMI_MIMO_API_KEY (or XIAOMI_API_KEY / MIMO_API_KEY), XIAOMI_MIMO_BASE_URL, XIAOMI_MIMO_MODEL
 #   Novita:     NOVITA_API_KEY, NOVITA_BASE_URL, NOVITA_MODEL
 #   Fireworks:  FIREWORKS_API_KEY, FIREWORKS_BASE_URL
 #   SiliconFlow: SILICONFLOW_API_KEY, SILICONFLOW_BASE_URL, SILICONFLOW_MODEL
@@ -268,7 +268,7 @@ max_subagents = 10 # optional (1-20)
 
 # Xiaomi MiMo OpenAI-compatible endpoint (https://platform.xiaomimimo.com)
 [providers.xiaomi_mimo]
-# api_key = "YOUR_XIAOMI_MIMO_API_KEY"
+# api_key = "YOUR_XIAOMI_KEY"
 # base_url = "https://api.xiaomimimo.com/v1"
 # model = "mimo-v2.5-pro"
 
@@ -423,7 +423,7 @@ exec_policy = true
 #
 # Xiaomi MiMo image understanding can be configured through the same tool:
 # model = "mimo-v2.5"
-# api_key = "YOUR_XIAOMI_MIMO_API_KEY"
+# api_key = "YOUR_XIAOMI_KEY"
 # base_url = "https://api.xiaomimimo.com/v1"
 
 # ─────────────────────────────────────────────────────────────────────────────────

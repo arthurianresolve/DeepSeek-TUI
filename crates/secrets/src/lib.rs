@@ -1,4 +1,4 @@
-//! Secret storage for DeepSeek API keys.
+//! Secret storage for CodeWhale API keys.
 //!
 //! Provides a small abstraction (`KeyringStore`) plus a default
 //! file-based implementation (`FileKeyringStore`), an opt-in OS keyring
@@ -19,12 +19,16 @@ use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// Default OS keychain service name. macOS users can verify entries with
-/// `security find-generic-password -s deepseek -a <provider>`.
+/// Default OS keychain service name. Kept as `deepseek` for compatibility
+/// with credentials saved before the CodeWhale rename. macOS users can verify
+/// entries with `security find-generic-password -s deepseek -a <provider>`.
 pub const DEFAULT_SERVICE: &str = "deepseek";
 /// Select the secret storage backend. Supported values are `file` (default)
 /// and `system`/`keyring` for the OS credential store.
-pub const SECRET_BACKEND_ENV: &str = "DEEPSEEK_SECRET_BACKEND";
+pub const SECRET_BACKEND_ENV: &str = "CODEWHALE_SECRET_BACKEND";
+/// Legacy alias for [`SECRET_BACKEND_ENV`].
+pub const LEGACY_SECRET_BACKEND_ENV: &str = "DEEPSEEK_SECRET_BACKEND";
+const FILE_BACKEND_LABEL: &str = "file-based (~/.codewhale/secrets/)";
 
 /// Errors that may arise from a [`KeyringStore`] backend.
 #[derive(Debug, Error)]
@@ -51,7 +55,7 @@ pub enum SecretsError {
 /// Abstract secret store trait.
 ///
 /// Concrete implementations may use the OS keyring ([`DefaultKeyringStore`]),
-/// a JSON file under `~/.deepseek/secrets/` ([`FileKeyringStore`]), or an
+/// a JSON file under `~/.codewhale/secrets/` ([`FileKeyringStore`]), or an
 /// in-memory map for tests ([`InMemoryKeyringStore`]).
 ///
 /// All implementations must be [`Send`] + [`Sync`] so they can be shared
@@ -78,7 +82,7 @@ pub trait KeyringStore: Send + Sync {
     /// Short, human-readable label for this backend.
     ///
     /// Used by diagnostic output (e.g. `doctor` command) to indicate which
-    /// storage backend is active. Examples: `"file-based (~/.deepseek/secrets/)"`,
+    /// storage backend is active. Examples: `"file-based (~/.codewhale/secrets/)"`,
     /// `"system keyring"`, `"in-memory (test)"`.
     fn backend_name(&self) -> &'static str;
 }
@@ -267,7 +271,7 @@ impl KeyringStore for InMemoryKeyringStore {
 /// JSON-on-disk secret store for headless environments.
 ///
 /// This is the default backend. Secrets are serialised as a JSON object
-/// at `<home>/.deepseek/secrets/secrets.json` with Unix file mode `0600`
+/// at `<home>/.codewhale/secrets/secrets.json` with Unix file mode `0600`
 /// (owner read/write only). The parent directory is created with mode `0700`
 /// if it does not exist.
 ///
@@ -295,16 +299,68 @@ impl FileKeyringStore {
         Self { path: path.into() }
     }
 
-    /// Default path: `<home>/.deepseek/secrets/secrets.json`. Honours
-    /// `HOME` (Unix) and `USERPROFILE` (Windows) via the `dirs` crate.
+    /// Default path: `<home>/.codewhale/secrets/secrets.json`. Honours
+    /// `CODEWHALE_HOME`, then `HOME`, `USERPROFILE`, and finally the platform
+    /// home directory from the `dirs` crate. On first use, non-conflicting
+    /// entries from the legacy `<home>/.deepseek/secrets/secrets.json` file are
+    /// copied into the CodeWhale store.
     pub fn default_path() -> Result<PathBuf, SecretsError> {
-        let home = dirs::home_dir().ok_or_else(|| {
+        let primary = default_codewhale_secrets_path()?;
+        let legacy = legacy_deepseek_secrets_path()?;
+        if let Err(err) = Self::migrate_legacy_file_if_needed(&primary, &legacy) {
+            tracing::warn!(
+                "could not migrate legacy secret store from {} to {}: {err}",
+                legacy.display(),
+                primary.display()
+            );
+        }
+        Ok(primary)
+    }
+
+    fn migrate_legacy_file_if_needed(primary: &Path, legacy: &Path) -> Result<(), SecretsError> {
+        if !legacy.exists() {
+            return Ok(());
+        }
+
+        let legacy_store = Self::new(legacy.to_path_buf());
+        let legacy_blob = legacy_store.load_unlocked()?;
+        if legacy_blob.entries.is_empty() {
+            return Ok(());
+        }
+
+        let primary_store = Self::new(primary.to_path_buf());
+        let mut primary_blob = primary_store.load_unlocked()?;
+        let mut changed = false;
+        for (key, value) in legacy_blob.entries {
+            if let std::collections::hash_map::Entry::Vacant(entry) =
+                primary_blob.entries.entry(key)
+            {
+                entry.insert(value);
+                changed = true;
+            }
+        }
+        if changed {
+            primary_store.store_unlocked(&primary_blob)?;
+        }
+        Ok(())
+    }
+
+    fn home_dir() -> Result<PathBuf, SecretsError> {
+        for var in ["HOME", "USERPROFILE"] {
+            if let Ok(value) = std::env::var(var) {
+                let trimmed = value.trim();
+                if !trimmed.is_empty() {
+                    return Ok(PathBuf::from(trimmed));
+                }
+            }
+        }
+
+        dirs::home_dir().ok_or_else(|| {
             SecretsError::Io(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
                 "could not resolve home directory for FileKeyringStore",
             ))
-        })?;
-        Ok(home.join(".deepseek").join("secrets").join("secrets.json"))
+        })
     }
 
     /// Path used for storage.
@@ -398,8 +454,28 @@ impl KeyringStore for FileKeyringStore {
     }
 
     fn backend_name(&self) -> &'static str {
-        "file-based (~/.deepseek/secrets/)"
+        FILE_BACKEND_LABEL
     }
+}
+
+fn default_codewhale_secrets_path() -> Result<PathBuf, SecretsError> {
+    if let Ok(value) = std::env::var("CODEWHALE_HOME") {
+        let trimmed = value.trim();
+        if !trimmed.is_empty() {
+            return Ok(PathBuf::from(trimmed).join("secrets").join("secrets.json"));
+        }
+    }
+    Ok(FileKeyringStore::home_dir()?
+        .join(".codewhale")
+        .join("secrets")
+        .join("secrets.json"))
+}
+
+fn legacy_deepseek_secrets_path() -> Result<PathBuf, SecretsError> {
+    Ok(FileKeyringStore::home_dir()?
+        .join(".deepseek")
+        .join("secrets")
+        .join("secrets.json"))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -418,6 +494,13 @@ fn secret_backend_selection(value: Option<&str>) -> SecretBackendSelection {
             _ => SecretBackendSelection::Unknown,
         },
     }
+}
+
+fn configured_secret_backend() -> Option<String> {
+    std::env::var(SECRET_BACKEND_ENV)
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .or_else(|| std::env::var(LEGACY_SECRET_BACKEND_ENV).ok())
 }
 
 /// High-level facade combining a [`KeyringStore`] with environment variable fallbacks.
@@ -491,11 +574,11 @@ impl Secrets {
     /// 3. If the env var is set to an unrecognised value, log a warning
     ///    and use the file-based store.
     pub fn auto_detect() -> Self {
-        match secret_backend_selection(std::env::var(SECRET_BACKEND_ENV).ok().as_deref()) {
+        match secret_backend_selection(configured_secret_backend().as_deref()) {
             SecretBackendSelection::File => Self::file_backed_default(),
             SecretBackendSelection::Unknown => {
                 tracing::warn!(
-                    "{SECRET_BACKEND_ENV} has an unsupported value; using file-backed secret store"
+                    "{SECRET_BACKEND_ENV}/{LEGACY_SECRET_BACKEND_ENV} has an unsupported value; using file-backed secret store"
                 );
                 Self::file_backed_default()
             }
@@ -516,7 +599,7 @@ impl Secrets {
 
     fn file_backed_default() -> Self {
         let path = FileKeyringStore::default_path()
-            .unwrap_or_else(|_| PathBuf::from(".deepseek-secrets.json"));
+            .unwrap_or_else(|_| PathBuf::from(".codewhale-secrets.json"));
         Self::new(Arc::new(FileKeyringStore::new(path)))
     }
 
@@ -594,7 +677,7 @@ impl Secrets {
 /// |---|---|
 /// | `deepseek` | `DEEPSEEK_API_KEY` |
 /// | `openrouter` | `OPENROUTER_API_KEY` |
-/// | `xiaomi-mimo` / `mimo` | `XIAOMI_MIMO_API_KEY`, `MIMO_API_KEY` |
+/// | `xiaomi-mimo` / `mimo` | `XIAOMI_MIMO_API_KEY`, `XIAOMI_API_KEY`, `MIMO_API_KEY` |
 /// | `novita` | `NOVITA_API_KEY` |
 /// | `nvidia` / `nvidia-nim` / `nim` | `NVIDIA_API_KEY`, `NVIDIA_NIM_API_KEY`, `DEEPSEEK_API_KEY` |
 /// | `fireworks` | `FIREWORKS_API_KEY` |
@@ -616,7 +699,7 @@ pub fn env_for(name: &str) -> Option<String> {
         "deepseek" => &["DEEPSEEK_API_KEY"],
         "openrouter" => &["OPENROUTER_API_KEY"],
         "xiaomi-mimo" | "xiaomi_mimo" | "xiaomimimo" | "mimo" | "xiaomi" => {
-            &["XIAOMI_MIMO_API_KEY", "MIMO_API_KEY"]
+            &["XIAOMI_MIMO_API_KEY", "XIAOMI_API_KEY", "MIMO_API_KEY"]
         }
         "novita" => &["NOVITA_API_KEY"],
         // NVIDIA NIM falls back to `DEEPSEEK_API_KEY` last because the
@@ -673,6 +756,7 @@ mod tests {
 
     fn clear_known_envs() {
         for var in [
+            "CODEWHALE_HOME",
             "DEEPSEEK_API_KEY",
             "OPENROUTER_API_KEY",
             "NOVITA_API_KEY",
@@ -689,12 +773,36 @@ mod tests {
             "WANJIE_API_KEY",
             "WANJIE_MAAS_API_KEY",
             "XIAOMI_MIMO_API_KEY",
+            "XIAOMI_API_KEY",
             "MIMO_API_KEY",
             SECRET_BACKEND_ENV,
+            LEGACY_SECRET_BACKEND_ENV,
         ] {
             // Safety: tests serialise on env_lock(); the broader
             // workspace has the same pattern in `crates/config`.
             unsafe { std::env::remove_var(var) };
+        }
+    }
+
+    struct EnvVarGuard {
+        name: &'static str,
+        previous: Option<std::ffi::OsString>,
+    }
+
+    impl EnvVarGuard {
+        fn set(name: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self {
+            let previous = std::env::var_os(name);
+            unsafe { std::env::set_var(name, value) };
+            Self { name, previous }
+        }
+    }
+
+    impl Drop for EnvVarGuard {
+        fn drop(&mut self) {
+            match self.previous.take() {
+                Some(value) => unsafe { std::env::set_var(self.name, value) },
+                None => unsafe { std::env::remove_var(self.name) },
+            }
         }
     }
 
@@ -731,24 +839,149 @@ mod tests {
     fn auto_detect_is_file_backed_by_default() {
         let _lock = env_lock();
         clear_known_envs();
+        let tmp = tempfile::tempdir().unwrap();
+        let _home = EnvVarGuard::set("HOME", tmp.path());
+        let _userprofile = EnvVarGuard::set("USERPROFILE", tmp.path());
 
         let secrets = Secrets::auto_detect();
 
-        assert_eq!(secrets.backend_name(), "file-based (~/.deepseek/secrets/)");
+        assert_eq!(secrets.backend_name(), FILE_BACKEND_LABEL);
     }
 
     #[test]
     fn auto_detect_honors_explicit_file_backend() {
         let _lock = env_lock();
         clear_known_envs();
+        let tmp = tempfile::tempdir().unwrap();
+        let _home = EnvVarGuard::set("HOME", tmp.path());
+        let _userprofile = EnvVarGuard::set("USERPROFILE", tmp.path());
         // Safety: env mutation guarded by env_lock().
         unsafe { std::env::set_var(SECRET_BACKEND_ENV, "local") };
 
         let secrets = Secrets::auto_detect();
 
-        assert_eq!(secrets.backend_name(), "file-based (~/.deepseek/secrets/)");
+        assert_eq!(secrets.backend_name(), FILE_BACKEND_LABEL);
         // Safety: env mutation guarded by env_lock().
         unsafe { std::env::remove_var(SECRET_BACKEND_ENV) };
+    }
+
+    #[test]
+    fn auto_detect_honors_legacy_backend_env_alias() {
+        let _lock = env_lock();
+        clear_known_envs();
+        let tmp = tempfile::tempdir().unwrap();
+        let _home = EnvVarGuard::set("HOME", tmp.path());
+        let _userprofile = EnvVarGuard::set("USERPROFILE", tmp.path());
+        unsafe { std::env::set_var(LEGACY_SECRET_BACKEND_ENV, "local") };
+
+        let secrets = Secrets::auto_detect();
+
+        assert_eq!(secrets.backend_name(), FILE_BACKEND_LABEL);
+        clear_known_envs();
+    }
+
+    #[test]
+    fn file_default_path_uses_codewhale_home() {
+        let _lock = env_lock();
+        clear_known_envs();
+        let tmp = tempfile::tempdir().unwrap();
+        let _home = EnvVarGuard::set("HOME", tmp.path());
+        let _userprofile = EnvVarGuard::set("USERPROFILE", tmp.path());
+
+        let path = FileKeyringStore::default_path().unwrap();
+
+        assert_eq!(
+            path,
+            tmp.path()
+                .join(".codewhale")
+                .join("secrets")
+                .join("secrets.json")
+        );
+    }
+
+    #[test]
+    fn file_default_path_honors_codewhale_home() {
+        let _lock = env_lock();
+        clear_known_envs();
+        let tmp = tempfile::tempdir().unwrap();
+        let custom = tmp.path().join("custom-codewhale");
+        let _home = EnvVarGuard::set("HOME", tmp.path());
+        let _userprofile = EnvVarGuard::set("USERPROFILE", tmp.path());
+        let _codewhale_home = EnvVarGuard::set("CODEWHALE_HOME", &custom);
+
+        let path = FileKeyringStore::default_path().unwrap();
+
+        assert_eq!(path, custom.join("secrets").join("secrets.json"));
+    }
+
+    #[test]
+    fn file_default_path_migrates_legacy_entries_to_codewhale() {
+        let _lock = env_lock();
+        clear_known_envs();
+        let tmp = tempfile::tempdir().unwrap();
+        let _home = EnvVarGuard::set("HOME", tmp.path());
+        let _userprofile = EnvVarGuard::set("USERPROFILE", tmp.path());
+        let legacy = tmp
+            .path()
+            .join(".deepseek")
+            .join("secrets")
+            .join("secrets.json");
+        FileKeyringStore::new(legacy.clone())
+            .set("xiaomi-mimo", "legacy-mimo")
+            .unwrap();
+
+        let primary = FileKeyringStore::default_path().unwrap();
+        let primary_store = FileKeyringStore::new(primary.clone());
+
+        assert_eq!(
+            primary,
+            tmp.path()
+                .join(".codewhale")
+                .join("secrets")
+                .join("secrets.json")
+        );
+        assert_eq!(
+            primary_store.get("xiaomi-mimo").unwrap().as_deref(),
+            Some("legacy-mimo")
+        );
+        assert!(
+            legacy.exists(),
+            "migration copies; it does not delete legacy data"
+        );
+    }
+
+    #[test]
+    fn file_default_path_migration_preserves_primary_values() {
+        let _lock = env_lock();
+        clear_known_envs();
+        let tmp = tempfile::tempdir().unwrap();
+        let _home = EnvVarGuard::set("HOME", tmp.path());
+        let _userprofile = EnvVarGuard::set("USERPROFILE", tmp.path());
+        let legacy = tmp
+            .path()
+            .join(".deepseek")
+            .join("secrets")
+            .join("secrets.json");
+        let primary = tmp
+            .path()
+            .join(".codewhale")
+            .join("secrets")
+            .join("secrets.json");
+        FileKeyringStore::new(legacy)
+            .set("openrouter", "legacy-openrouter")
+            .unwrap();
+        let primary_store = FileKeyringStore::new(primary.clone());
+        primary_store
+            .set("openrouter", "primary-openrouter")
+            .unwrap();
+
+        let resolved = FileKeyringStore::default_path().unwrap();
+
+        assert_eq!(resolved, primary);
+        assert_eq!(
+            primary_store.get("openrouter").unwrap().as_deref(),
+            Some("primary-openrouter")
+        );
     }
 
     #[test]
@@ -878,6 +1111,10 @@ mod tests {
         assert_eq!(env_for("mimo").as_deref(), Some("mimo-key"));
         assert_eq!(env_for("xiaomi").as_deref(), Some("mimo-key"));
 
+        clear_known_envs();
+
+        unsafe { std::env::set_var("XIAOMI_API_KEY", "xiaomi-key") };
+        assert_eq!(env_for("xiaomi-mimo").as_deref(), Some("xiaomi-key"));
         clear_known_envs();
     }
 
@@ -1102,13 +1339,19 @@ mod tests {
 
     #[test]
     fn file_store_default_path_uses_home() {
-        // We don't override HOME here (other tests do); we just check the
-        // shape of the path is `<home>/.deepseek/secrets/secrets.json`.
+        let _lock = env_lock();
+        clear_known_envs();
+        let tmp = tempfile::tempdir().unwrap();
+        let _home = EnvVarGuard::set("HOME", tmp.path());
+        let _userprofile = EnvVarGuard::set("USERPROFILE", tmp.path());
+
         let path = FileKeyringStore::default_path().unwrap();
-        assert!(
-            path.ends_with("secrets/secrets.json") || path.ends_with("secrets\\secrets.json"),
-            "unexpected default path: {}",
-            path.display()
+        assert_eq!(
+            path,
+            tmp.path()
+                .join(".codewhale")
+                .join("secrets")
+                .join("secrets.json")
         );
     }
 }

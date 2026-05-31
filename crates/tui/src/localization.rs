@@ -1256,7 +1256,7 @@ fn english(id: MessageId) -> &'static str {
         }
         MessageId::OnboardApiKeyStep2 => "Step 2.  Paste it below and press Enter.",
         MessageId::OnboardApiKeySavedHint => {
-            "Saved to ~/.deepseek/config.toml so it works from any folder."
+            "Saved to ~/.codewhale/config.toml so it works from any folder."
         }
         MessageId::OnboardApiKeyFormatHint => {
             "Paste the full key exactly as issued (no spaces or newlines)."
@@ -2100,7 +2100,7 @@ fn japanese(id: MessageId) -> Option<&'static str> {
         }
         MessageId::OnboardApiKeyStep2 => "ステップ 2. 下に貼り付けて Enter を押してください。",
         MessageId::OnboardApiKeySavedHint => {
-            "~/.deepseek/config.toml に保存されるので、どのフォルダからでも有効になります。"
+            "~/.codewhale/config.toml に保存されるので、どのフォルダからでも有効になります。"
         }
         MessageId::OnboardApiKeyFormatHint => {
             "発行されたキーをそのまま貼り付けてください（空白や改行を含めない）。"
@@ -2447,7 +2447,7 @@ fn chinese_simplified(id: MessageId) -> Option<&'static str> {
         }
         MessageId::OnboardApiKeyStep2 => "步骤 2.  把密钥粘贴到下方并按 Enter。",
         MessageId::OnboardApiKeySavedHint => {
-            "保存到 ~/.deepseek/config.toml，因此在任何目录下都生效。"
+            "保存到 ~/.codewhale/config.toml，因此在任何目录下都生效。"
         }
         MessageId::OnboardApiKeyFormatHint => "请完整粘贴密钥（不要含空格或换行）。",
         MessageId::OnboardApiKeyPlaceholder => "（在此粘贴密钥）",
@@ -2856,7 +2856,7 @@ fn portuguese_brazil(id: MessageId) -> Option<&'static str> {
         }
         MessageId::OnboardApiKeyStep2 => "Passo 2.  Cole abaixo e pressione Enter.",
         MessageId::OnboardApiKeySavedHint => {
-            "Salvo em ~/.deepseek/config.toml para funcionar em qualquer pasta."
+            "Salvo em ~/.codewhale/config.toml para funcionar em qualquer pasta."
         }
         MessageId::OnboardApiKeyFormatHint => {
             "Cole a chave inteira como foi emitida (sem espaços ou quebras de linha)."
@@ -3283,7 +3283,7 @@ fn spanish_latin_america(id: MessageId) -> Option<&'static str> {
         }
         MessageId::OnboardApiKeyStep2 => "Paso 2.  Pégala abajo y presiona Enter.",
         MessageId::OnboardApiKeySavedHint => {
-            "Guardada en ~/.deepseek/config.toml para funcionar en cualquier carpeta."
+            "Guardada en ~/.codewhale/config.toml para funcionar en cualquier carpeta."
         }
         MessageId::OnboardApiKeyFormatHint => {
             "Pega la clave completa tal como fue emitida (sin espacios ni saltos de línea)."

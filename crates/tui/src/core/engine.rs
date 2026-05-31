@@ -407,7 +407,7 @@ impl Engine {
             ApiProvider::WanjieArk => "WANJIE_ARK_API_KEY/WANJIE_API_KEY/WANJIE_MAAS_API_KEY",
             ApiProvider::Volcengine => "VOLCENGINE_API_KEY/VOLCENGINE_ARK_API_KEY/ARK_API_KEY",
             ApiProvider::Openrouter => "OPENROUTER_API_KEY",
-            ApiProvider::XiaomiMimo => "XIAOMI_MIMO_API_KEY/MIMO_API_KEY",
+            ApiProvider::XiaomiMimo => "XIAOMI_MIMO_API_KEY/XIAOMI_API_KEY/MIMO_API_KEY",
             ApiProvider::Novita => "NOVITA_API_KEY",
             ApiProvider::Fireworks => "FIREWORKS_API_KEY",
             ApiProvider::Siliconflow => "SILICONFLOW_API_KEY",
@@ -420,7 +420,7 @@ impl Engine {
         Some(format!(
             "The rejected key came from {env_var}; no saved config key is present.\n\
              Run `codewhale auth status` to inspect credential sources, then \
-             `codewhale auth set --provider {provider}` to save a valid key in ~/.deepseek/config.toml, \
+             `codewhale auth set --provider {provider}` to save a valid key in ~/.codewhale/config.toml, \
              or remove the stale export and open a fresh shell.",
             provider = provider.as_str()
         ))

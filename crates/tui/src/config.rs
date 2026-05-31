@@ -2210,45 +2210,45 @@ impl Config {
                    • export DEEPSEEK_API_KEY=<your-key>      (current shell only;\n\
                      also note: zsh users — exports in ~/.zshrc only reach interactive\n\
                      shells, prefer ~/.zshenv for everything)\n\
-                   • api_key = \"<your-key>\"  in ~/.deepseek/config.toml"
+                   • api_key = \"<your-key>\"  in ~/.codewhale/config.toml"
             ),
             ApiProvider::NvidiaNim => anyhow::bail!(
                 "NVIDIA NIM API key not found. Run 'codewhale auth set --provider nvidia-nim', \
-                 set NVIDIA_API_KEY/NVIDIA_NIM_API_KEY, or save api_key in ~/.deepseek/config.toml \
+                 set NVIDIA_API_KEY/NVIDIA_NIM_API_KEY, or save api_key in ~/.codewhale/config.toml \
                  with provider = \"nvidia-nim\"."
             ),
             ApiProvider::Openai => anyhow::bail!(
                 "OpenAI-compatible API key not found. Run 'codewhale auth set --provider openai', \
-                 set OPENAI_API_KEY, or add [providers.openai] api_key in ~/.deepseek/config.toml."
+                 set OPENAI_API_KEY, or add [providers.openai] api_key in ~/.codewhale/config.toml."
             ),
             ApiProvider::Atlascloud => anyhow::bail!(
                 "AtlasCloud API key not found. Run 'codewhale auth set --provider atlascloud', \
-                 set ATLASCLOUD_API_KEY, or add [providers.atlascloud] api_key in ~/.deepseek/config.toml."
+                 set ATLASCLOUD_API_KEY, or add [providers.atlascloud] api_key in ~/.codewhale/config.toml."
             ),
             ApiProvider::WanjieArk => anyhow::bail!(
                 "Wanjie Ark API key not found. Run 'codewhale auth set --provider wanjie-ark', \
                  set WANJIE_ARK_API_KEY/WANJIE_API_KEY/WANJIE_MAAS_API_KEY, or add \
-                 [providers.wanjie_ark] api_key in ~/.deepseek/config.toml."
+                 [providers.wanjie_ark] api_key in ~/.codewhale/config.toml."
             ),
             ApiProvider::Openrouter => anyhow::bail!(
                 "OpenRouter API key not found. Run 'codewhale auth set --provider openrouter', \
-                 set OPENROUTER_API_KEY, or add [providers.openrouter] api_key in ~/.deepseek/config.toml."
+                 set OPENROUTER_API_KEY, or add [providers.openrouter] api_key in ~/.codewhale/config.toml."
             ),
             ApiProvider::XiaomiMimo => anyhow::bail!(
                 "Xiaomi MiMo API key not found. Run 'codewhale auth set --provider xiaomi-mimo', \
-                 set XIAOMI_MIMO_API_KEY/MIMO_API_KEY, or add [providers.xiaomi_mimo] api_key in ~/.deepseek/config.toml."
+                 set XIAOMI_MIMO_API_KEY/XIAOMI_API_KEY/MIMO_API_KEY, or add [providers.xiaomi_mimo] api_key in ~/.codewhale/config.toml."
             ),
             ApiProvider::Novita => anyhow::bail!(
                 "Novita API key not found. Run 'codewhale auth set --provider novita', \
-                 set NOVITA_API_KEY, or add [providers.novita] api_key in ~/.deepseek/config.toml."
+                 set NOVITA_API_KEY, or add [providers.novita] api_key in ~/.codewhale/config.toml."
             ),
             ApiProvider::Fireworks => anyhow::bail!(
                 "Fireworks AI API key not found. Run 'codewhale auth set --provider fireworks', \
-                 set FIREWORKS_API_KEY, or add [providers.fireworks] api_key in ~/.deepseek/config.toml."
+                 set FIREWORKS_API_KEY, or add [providers.fireworks] api_key in ~/.codewhale/config.toml."
             ),
             ApiProvider::Siliconflow => anyhow::bail!(
                 "SiliconFlow API key not found. Run 'codewhale auth set --provider siliconflow', \
-                 set SILICONFLOW_API_KEY, or add [providers.siliconflow] api_key in ~/.deepseek/config.toml."
+                 set SILICONFLOW_API_KEY, or add [providers.siliconflow] api_key in ~/.codewhale/config.toml."
             ),
             ApiProvider::Moonshot => anyhow::bail!(
                 "Moonshot/Kimi API key not found. Run 'codewhale auth set --provider moonshot', \
@@ -3969,7 +3969,7 @@ pub enum SavedCredential {
     /// install hide the freshly-entered key (#593). The `backend`
     /// label is the value of [`codewhale_secrets::Secrets::backend_name`]
     /// at write time so the toast text can name the actual backend
-    /// (`"system keyring"`, `"file-based (~/.deepseek/secrets/)"`).
+    /// (`"system keyring"`, `"file-based (~/.codewhale/secrets/)"`).
     KeyringAndConfigFile {
         /// `Secrets::backend_name()` at write time.
         backend: String,
@@ -3998,7 +3998,7 @@ impl SavedCredential {
 
 /// Save the active provider's API key.
 ///
-/// **Dual-write strategy (#593):** writes to `~/.deepseek/config.toml`
+/// **Dual-write strategy (#593):** writes to `~/.codewhale/config.toml`
 /// (always) and to the OS keyring via [`codewhale_secrets::Secrets`]
 /// (when a backend is reachable). The runtime resolves credentials in
 /// `keyring → env → config-file` order; writing to the config file
@@ -4139,7 +4139,7 @@ reasoning_effort = "max"
 /// Platform credential stores are intentionally not queried here.
 /// Startup/onboarding checks must be cheap and prompt-free, so v0.8.8
 /// keeps the default auth path to environment variables and
-/// `~/.deepseek/config.toml`.
+/// `~/.codewhale/config.toml`.
 ///
 /// Used by [`crate::tui::app::App::new`] to decide whether to gate
 /// the user behind the in-TUI api-key onboarding screen — getting
@@ -4200,6 +4200,7 @@ pub fn active_provider_has_env_api_key(config: &Config) -> bool {
         }
         ApiProvider::XiaomiMimo => {
             std::env::var("XIAOMI_MIMO_API_KEY").is_ok_and(|k| !k.trim().is_empty())
+                || std::env::var("XIAOMI_API_KEY").is_ok_and(|k| !k.trim().is_empty())
                 || std::env::var("MIMO_API_KEY").is_ok_and(|k| !k.trim().is_empty())
         }
         ApiProvider::Novita => std::env::var("NOVITA_API_KEY").is_ok_and(|k| !k.trim().is_empty()),
@@ -4266,7 +4267,8 @@ pub fn has_api_key_for(config: &Config, provider: ApiProvider) -> bool {
         return true;
     }
     if matches!(provider, ApiProvider::XiaomiMimo)
-        && std::env::var("MIMO_API_KEY").is_ok_and(|k| !k.trim().is_empty())
+        && (std::env::var("XIAOMI_API_KEY").is_ok_and(|k| !k.trim().is_empty())
+            || std::env::var("MIMO_API_KEY").is_ok_and(|k| !k.trim().is_empty()))
     {
         return true;
     }
@@ -4318,7 +4320,7 @@ pub fn has_api_key_for(config: &Config, provider: ApiProvider) -> bool {
 
 /// Save an API key to the appropriate place for the given provider.
 /// DeepSeek goes through [`save_api_key`]. Other providers write
-/// `[providers.<name>] api_key = "..."` to `~/.deepseek/config.toml`.
+/// `[providers.<name>] api_key = "..."` to `~/.codewhale/config.toml`.
 /// Returns the config file path.
 pub fn save_api_key_for(provider: ApiProvider, api_key: &str) -> Result<PathBuf> {
     if matches!(provider, ApiProvider::Deepseek | ApiProvider::DeepseekCN) {
@@ -4927,7 +4929,10 @@ mod tests {
     struct EnvGuard {
         home: Option<OsString>,
         userprofile: Option<OsString>,
+        codewhale_home: Option<OsString>,
         deepseek_config_path: Option<OsString>,
+        codewhale_secret_backend: Option<OsString>,
+        deepseek_secret_backend: Option<OsString>,
         deepseek_provider: Option<OsString>,
         deepseek_api_key: Option<OsString>,
         deepseek_base_url: Option<OsString>,
@@ -4961,6 +4966,7 @@ mod tests {
         openrouter_api_key: Option<OsString>,
         openrouter_base_url: Option<OsString>,
         xiaomi_mimo_api_key: Option<OsString>,
+        xiaomi_api_key: Option<OsString>,
         mimo_api_key: Option<OsString>,
         xiaomi_mimo_base_url: Option<OsString>,
         mimo_base_url: Option<OsString>,
@@ -5001,7 +5007,10 @@ mod tests {
             let config_str = OsString::from(config_path.as_os_str());
             let home_prev = env::var_os("HOME");
             let userprofile_prev = env::var_os("USERPROFILE");
+            let codewhale_home_prev = env::var_os("CODEWHALE_HOME");
             let deepseek_config_prev = env::var_os("DEEPSEEK_CONFIG_PATH");
+            let codewhale_secret_backend_prev = env::var_os("CODEWHALE_SECRET_BACKEND");
+            let deepseek_secret_backend_prev = env::var_os("DEEPSEEK_SECRET_BACKEND");
             let deepseek_provider_prev = env::var_os("DEEPSEEK_PROVIDER");
             let api_key_prev = env::var_os("DEEPSEEK_API_KEY");
             let base_url_prev = env::var_os("DEEPSEEK_BASE_URL");
@@ -5035,6 +5044,7 @@ mod tests {
             let openrouter_api_key_prev = env::var_os("OPENROUTER_API_KEY");
             let openrouter_base_url_prev = env::var_os("OPENROUTER_BASE_URL");
             let xiaomi_mimo_api_key_prev = env::var_os("XIAOMI_MIMO_API_KEY");
+            let xiaomi_api_key_prev = env::var_os("XIAOMI_API_KEY");
             let mimo_api_key_prev = env::var_os("MIMO_API_KEY");
             let xiaomi_mimo_base_url_prev = env::var_os("XIAOMI_MIMO_BASE_URL");
             let mimo_base_url_prev = env::var_os("MIMO_BASE_URL");
@@ -5070,7 +5080,10 @@ mod tests {
             unsafe {
                 env::set_var("HOME", &home_str);
                 env::set_var("USERPROFILE", &home_str);
+                env::remove_var("CODEWHALE_HOME");
                 env::set_var("DEEPSEEK_CONFIG_PATH", &config_str);
+                env::remove_var("CODEWHALE_SECRET_BACKEND");
+                env::remove_var("DEEPSEEK_SECRET_BACKEND");
                 env::remove_var("DEEPSEEK_PROVIDER");
                 env::remove_var("DEEPSEEK_API_KEY");
                 env::remove_var("DEEPSEEK_BASE_URL");
@@ -5104,6 +5117,7 @@ mod tests {
                 env::remove_var("OPENROUTER_API_KEY");
                 env::remove_var("OPENROUTER_BASE_URL");
                 env::remove_var("XIAOMI_MIMO_API_KEY");
+                env::remove_var("XIAOMI_API_KEY");
                 env::remove_var("MIMO_API_KEY");
                 env::remove_var("XIAOMI_MIMO_BASE_URL");
                 env::remove_var("MIMO_BASE_URL");
@@ -5139,7 +5153,10 @@ mod tests {
             Self {
                 home: home_prev,
                 userprofile: userprofile_prev,
+                codewhale_home: codewhale_home_prev,
                 deepseek_config_path: deepseek_config_prev,
+                codewhale_secret_backend: codewhale_secret_backend_prev,
+                deepseek_secret_backend: deepseek_secret_backend_prev,
                 deepseek_provider: deepseek_provider_prev,
                 deepseek_api_key: api_key_prev,
                 deepseek_base_url: base_url_prev,
@@ -5173,6 +5190,7 @@ mod tests {
                 openrouter_api_key: openrouter_api_key_prev,
                 openrouter_base_url: openrouter_base_url_prev,
                 xiaomi_mimo_api_key: xiaomi_mimo_api_key_prev,
+                xiaomi_api_key: xiaomi_api_key_prev,
                 mimo_api_key: mimo_api_key_prev,
                 xiaomi_mimo_base_url: xiaomi_mimo_base_url_prev,
                 mimo_base_url: mimo_base_url_prev,
@@ -5214,7 +5232,16 @@ mod tests {
             unsafe {
                 Self::restore_var("HOME", self.home.take());
                 Self::restore_var("USERPROFILE", self.userprofile.take());
+                Self::restore_var("CODEWHALE_HOME", self.codewhale_home.take());
                 Self::restore_var("DEEPSEEK_CONFIG_PATH", self.deepseek_config_path.take());
+                Self::restore_var(
+                    "CODEWHALE_SECRET_BACKEND",
+                    self.codewhale_secret_backend.take(),
+                );
+                Self::restore_var(
+                    "DEEPSEEK_SECRET_BACKEND",
+                    self.deepseek_secret_backend.take(),
+                );
                 Self::restore_var("DEEPSEEK_PROVIDER", self.deepseek_provider.take());
                 Self::restore_var("DEEPSEEK_API_KEY", self.deepseek_api_key.take());
                 Self::restore_var("DEEPSEEK_BASE_URL", self.deepseek_base_url.take());
@@ -5251,6 +5278,7 @@ mod tests {
                 Self::restore_var("OPENROUTER_API_KEY", self.openrouter_api_key.take());
                 Self::restore_var("OPENROUTER_BASE_URL", self.openrouter_base_url.take());
                 Self::restore_var("XIAOMI_MIMO_API_KEY", self.xiaomi_mimo_api_key.take());
+                Self::restore_var("XIAOMI_API_KEY", self.xiaomi_api_key.take());
                 Self::restore_var("MIMO_API_KEY", self.mimo_api_key.take());
                 Self::restore_var("XIAOMI_MIMO_BASE_URL", self.xiaomi_mimo_base_url.take());
                 Self::restore_var("MIMO_BASE_URL", self.mimo_base_url.take());
@@ -7999,7 +8027,7 @@ api_key = "moonshot-platform-key"
         ));
         fs::create_dir_all(&temp_root)?;
         let _guard = EnvGuard::new(&temp_root);
-        unsafe { std::env::set_var("DEEPSEEK_SECRET_BACKEND", "local") };
+        unsafe { std::env::set_var("CODEWHALE_SECRET_BACKEND", "local") };
 
         let path = save_api_key_for(ApiProvider::Openrouter, "or-saved-key")?;
         let contents = fs::read_to_string(&path)?;

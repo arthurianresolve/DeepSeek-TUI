@@ -2305,6 +2305,7 @@ mod tests {
         openrouter_api_key: Option<OsString>,
         openrouter_base_url: Option<OsString>,
         xiaomi_mimo_api_key: Option<OsString>,
+        xiaomi_api_key: Option<OsString>,
         mimo_api_key: Option<OsString>,
         xiaomi_mimo_base_url: Option<OsString>,
         mimo_base_url: Option<OsString>,
@@ -2364,6 +2365,7 @@ mod tests {
                 openrouter_api_key: env::var_os("OPENROUTER_API_KEY"),
                 openrouter_base_url: env::var_os("OPENROUTER_BASE_URL"),
                 xiaomi_mimo_api_key: env::var_os("XIAOMI_MIMO_API_KEY"),
+                xiaomi_api_key: env::var_os("XIAOMI_API_KEY"),
                 mimo_api_key: env::var_os("MIMO_API_KEY"),
                 xiaomi_mimo_base_url: env::var_os("XIAOMI_MIMO_BASE_URL"),
                 mimo_base_url: env::var_os("MIMO_BASE_URL"),
@@ -2418,6 +2420,7 @@ mod tests {
                 env::remove_var("OPENROUTER_API_KEY");
                 env::remove_var("OPENROUTER_BASE_URL");
                 env::remove_var("XIAOMI_MIMO_API_KEY");
+                env::remove_var("XIAOMI_API_KEY");
                 env::remove_var("MIMO_API_KEY");
                 env::remove_var("XIAOMI_MIMO_BASE_URL");
                 env::remove_var("MIMO_BASE_URL");
@@ -2488,6 +2491,7 @@ mod tests {
                 Self::restore_var("OPENROUTER_API_KEY", self.openrouter_api_key.take());
                 Self::restore_var("OPENROUTER_BASE_URL", self.openrouter_base_url.take());
                 Self::restore_var("XIAOMI_MIMO_API_KEY", self.xiaomi_mimo_api_key.take());
+                Self::restore_var("XIAOMI_API_KEY", self.xiaomi_api_key.take());
                 Self::restore_var("MIMO_API_KEY", self.mimo_api_key.take());
                 Self::restore_var("XIAOMI_MIMO_BASE_URL", self.xiaomi_mimo_base_url.take());
                 Self::restore_var("MIMO_BASE_URL", self.mimo_base_url.take());
